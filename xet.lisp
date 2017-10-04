@@ -3,6 +3,11 @@
 (require :cl-opengl)
 (require :sdl2)
 
+(defclass model ()
+  ((window :accessor window)))
+
+(defparameter *m* (make-instance 'model))
+
 (defparameter *vertex-shader*
   "#version 330 core
 
@@ -50,7 +55,7 @@
 
 (defparameter *rgb* #(0.5 0.5 0.5))
 
-(defun render-swap (win buf program)
+(defun render-swap (buf program)
   (gl:clear :color-buffer-bit :depth-buffer-bit)
   (gl:use-program program)
   (gl:uniformfv (gl:get-uniform-location program "color") *rgb*)
@@ -60,13 +65,14 @@
   (gl:draw-arrays :triangles 0 3)
   (gl:disable-vertex-attrib-array 0)
   (gl:use-program 0)
-  (sdl2:gl-swap-window win))
+  (sdl2:gl-swap-window (window *m*)))
 
 (defun main ()
   (sdl2:with-init (:everything)
     (sdl2:gl-set-attr :context-major-version 3)
     (sdl2:gl-set-attr :context-minor-version 3)
     (sdl2:with-window (win :flags '(:opengl :shown))
+      (setf (window *m*) win)
       (sdl2:with-gl-context (gl-context win)
         (sdl2:gl-make-current win gl-context)
         (gl:clear-color 0.0 0.0 0.0 0.0)
@@ -77,5 +83,5 @@
               (pro (make-program)))
           (gl:bind-vertex-array vao)
           (sdl2:with-event-loop (:method :poll)
-            (:idle () (render-swap win buf pro))
+            (:idle () (render-swap buf pro))
             (:quit () t)))))))
