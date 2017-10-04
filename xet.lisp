@@ -35,18 +35,16 @@
     (gl:bind-buffer :array-buffer 0)
     buf))
 
-(defun make-shader (type src)
+(defun make-shader (program type src)
   (let ((shader (gl:create-shader type)))
     (gl:shader-source shader src)
     (gl:compile-shader shader)
-    shader))
+    (gl:attach-shader program shader)))
 
 (defun make-program ()
-  (let ((pro (gl:create-program))
-        (vert (make-shader :vertex-shader *vertex-shader*))
-        (frag (make-shader :fragment-shader *fragment-shader*)))
-    (gl:attach-shader pro vert)
-    (gl:attach-shader pro frag)
+  (let ((pro (gl:create-program)))
+    (make-shader pro :vertex-shader *vertex-shader*)
+    (make-shader pro :fragment-shader *fragment-shader*)
     (gl:link-program pro)
     pro))
 
