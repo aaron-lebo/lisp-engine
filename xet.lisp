@@ -75,7 +75,10 @@
       (setf (window *m*) win)
       (sdl2:with-gl-context (gl-context win)
         (sdl2:gl-make-current win gl-context)
-        (gl:clear-color 0.0 0.0 0.0 0.0)
+        (gl:enable :cull-face)
+        (gl:enable :depth-test)
+        (gl:logic-op :invert)
+        (gl:clear-color 0.0 0.0 0.0 1.0)
         (let ((vao (gl:gen-vertex-array))
               (buf (make-buffer #(-0.5 -0.5 0.0
                                    0.5 -0.5 0.0
