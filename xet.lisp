@@ -21,26 +21,6 @@
         (gl:tex-parameter :texture-2d :texture-wrap-t :clamp-to-edge))
       (gl:tex-image-2d :texture-2d 0 :rgba (pngload:width png) (pngload:height png) 0 :rgba :unsigned-byte (pngload:data png)))))
 
-(defparameter *vertex-shader*
-  "#version 330 core
-
-   layout(location = 0) in vec3 xyz;
-
-   void main() {
-       gl_Position.xyz = xyz;
-       gl_Position.w = 1.0;
-   }")
-
-(defparameter *fragment-shader*
-  "#version 330 core
-
-   uniform vec3 color;
-   out vec3 colr;
-
-   void main() {
-       colr = color;
-   }")
-
 (defun make-buffer (verts)
   (let* ((len (length verts))
          (arr (gl:alloc-gl-array :float len))
@@ -53,18 +33,30 @@
     (gl:bind-buffer :array-buffer 0)
     buf))
 
-(defun make-shader (program type src)
-  (let ((shader (gl:create-shader type)))
+(defun read-file (file)
+  (with-open-file (stream file)
+    (let ((str (make-string (file-length stream))))
+      (read-sequence str stream)
+      str)))
+
+(defun load-shader (program name type)
+  (let ((src (read-file (format nil "shaders/~a_~a.glsl" name type)))
+        (shader (gl:create-shader (if (eq type "vertex") :vertex-shader :fragment-shader))))
     (gl:shader-source shader src)
     (gl:compile-shader shader)
-    (gl:attach-shader program shader)))
+    (gl:attach-shader program shader)
+    shader))
 
-(defun make-program ()
-  (let ((pro (gl:create-program)))
-    (make-shader pro :vertex-shader *vertex-shader*)
-    (make-shader pro :fragment-shader *fragment-shader*)
-    (gl:link-program pro)
-    pro))
+(defun load-program (name)
+  (let* ((prg (gl:create-program))
+         (vert (load-shader prg name "vertex"))
+         (frag (load-shader prg name "fragment")))
+    (gl:link-program prg)
+    (gl:detach-shader prg vert)
+    (gl:detach-shader prg frag)
+    (gl:delete-shader vert)
+    (gl:delete-shader frag)
+    prg))
 
 (defparameter *rgb* #(0.5 0.5 0.5))
 
@@ -103,8 +95,9 @@
               (buf (make-buffer #(-0.5 -0.5 0.0
                                    0.5 -0.5 0.0
                                    0.0  0.5 0.0)))
-              (pro (make-program)))
+              (block-prg (load-program "block"))
+              (prg (load-program "triangle")))
           (gl:bind-vertex-array vao)
           (sdl2:with-event-loop (:method :poll)
-            (:idle () (render-swap buf pro))
+            (:idle () (render-swap buf prg))
             (:quit () t)))))))
