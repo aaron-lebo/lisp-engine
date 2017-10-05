@@ -1,12 +1,25 @@
 (in-package :xet)
 
 (require :cl-opengl)
+(require :pngload)
 (require :sdl2)
 
 (defclass model ()
   ((window :accessor window)))
 
 (defparameter *m* (make-instance 'model))
+
+(defun load-texture (active-tex file &optional wrap)
+  (pngload:with-png-in-static-vector (png file :flip-y t)
+    (let ((tex (gl:gen-texture)))
+      (gl:active-texture active-tex)
+      (gl:bind-texture :texture-2d tex)
+      (gl:tex-parameter :texture-2d :texture-min-filter :linear)
+      (gl:tex-parameter :texture-2d :texture-mag-filter :linear)
+      (when wrap
+        (gl:tex-parameter :texture-2d :texture-wrap-s :clamp-to-edge)
+        (gl:tex-parameter :texture-2d :texture-wrap-t :clamp-to-edge))
+      (gl:tex-image-2d :texture-2d 0 :rgba (pngload:width png) (pngload:height png) 0 :rgba :unsigned-byte (pngload:data png)))))
 
 (defparameter *vertex-shader*
   "#version 330 core
@@ -75,10 +88,17 @@
       (setf (window *m*) win)
       (sdl2:with-gl-context (gl-context win)
         (sdl2:gl-make-current win gl-context)
+
         (gl:enable :cull-face)
         (gl:enable :depth-test)
         (gl:logic-op :invert)
         (gl:clear-color 0.0 0.0 0.0 1.0)
+
+        (load-texture :texture0 "textures/texture.png")
+        (load-texture :texture1 "textures/font.png")
+        (load-texture :texture2 "textures/sky.png" t)
+        (load-texture :texture3 "textures/sign.png")
+
         (let ((vao (gl:gen-vertex-array))
               (buf (make-buffer #(-0.5 -0.5 0.0
                                    0.5 -0.5 0.0

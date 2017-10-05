@@ -3,6 +3,7 @@
   :author "Your Name <your.name@example.com>"
   :license "Specify license here"
   :depends-on (#:cl-opengl
+               #:pngload
                #:sdl2)
   :serial t
   :components ((:file "package")
