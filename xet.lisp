@@ -21,17 +21,19 @@
         (gl:tex-parameter :texture-2d :texture-wrap-t :clamp-to-edge))
       (gl:tex-image-2d :texture-2d 0 :rgba (pngload:width png) (pngload:height png) 0 :rgba :unsigned-byte (pngload:data png)))))
 
-(defun make-buffer (verts)
-  (let* ((len (length verts))
-         (arr (gl:alloc-gl-array :float len))
-         (buf (gl:gen-buffer)))
-    (gl:bind-buffer :array-buffer buf)
-    (dotimes (i len)
-      (setf (gl:glaref arr i) (aref verts i)))
-    (gl:buffer-data :array-buffer :static-draw arr)
-    (gl:free-gl-array arr)
-    (gl:bind-buffer :array-buffer 0)
-    buf))
+(defclass program ()
+  ((id :initarg :id)
+   position
+   normal
+   uv
+   matrix
+   sampler
+   camera
+   timer
+   sky-sampler
+   daylight
+   fog-distance
+   ortho))
 
 (defun read-file (file)
   (with-open-file (stream file)
@@ -47,16 +49,33 @@
     (gl:attach-shader program shader)
     shader))
 
-(defun load-program (name)
+(defun load-program (name &optional attribs uniforms)
   (let* ((prg (gl:create-program))
          (vert (load-shader prg name "vertex"))
-         (frag (load-shader prg name "fragment")))
+         (frag (load-shader prg name "fragment"))
+         (program (make-instance 'program :id prg)))
     (gl:link-program prg)
     (gl:detach-shader prg vert)
     (gl:detach-shader prg frag)
     (gl:delete-shader vert)
     (gl:delete-shader frag)
-    prg))
+    (loop :for (slot str) :on attribs :by #'cddr :while str
+          :do (setf (slot-value program slot) (gl:get-attrib-location prg str)))
+    (loop :for (slot str) :on uniforms :by #'cddr :while str
+          :do (setf (slot-value program slot) (gl:get-uniform-location prg str)))
+    program))
+
+(defun make-buffer (verts)
+  (let* ((len (length verts))
+         (arr (gl:alloc-gl-array :float len))
+         (buf (gl:gen-buffer)))
+    (gl:bind-buffer :array-buffer buf)
+    (dotimes (i len)
+      (setf (gl:glaref arr i) (aref verts i)))
+    (gl:buffer-data :array-buffer :static-draw arr)
+    (gl:free-gl-array arr)
+    (gl:bind-buffer :array-buffer 0)
+    buf))
 
 (defparameter *rgb* #(0.5 0.5 0.5))
 
@@ -91,13 +110,27 @@
         (load-texture :texture2 "textures/sky.png" t)
         (load-texture :texture3 "textures/sign.png")
 
-        (let ((vao (gl:gen-vertex-array))
+        (let ((block-prg (load-program "block"
+                                       '(position "position"
+                                         normal "normal"
+                                         uv "uv")
+                                       '(matrix "matrix"
+                                         sampler "sampler"
+                                         sky-sampler "sky_sampler"
+                                         daylight "daylight"
+                                         fog-distance "fog_distance"
+                                         ortho "ortho"
+                                         camera "camera"
+                                         timer "timer")))
+              (line-prg (load-program "line"))
+              (text-prg (load-program "text"))
+              (sky-prg (load-program "sky"))
+              (triangle-prg (load-program "triangle"))
+              (vao (gl:gen-vertex-array))
               (buf (make-buffer #(-0.5 -0.5 0.0
                                    0.5 -0.5 0.0
-                                   0.0  0.5 0.0)))
-              (block-prg (load-program "block"))
-              (prg (load-program "triangle")))
+                                   0.0  0.5 0.0))))
           (gl:bind-vertex-array vao)
           (sdl2:with-event-loop (:method :poll)
-            (:idle () (render-swap buf prg))
+            (:idle () (render-swap buf (slot-value triangle-prg 'id)))
             (:quit () t)))))))
