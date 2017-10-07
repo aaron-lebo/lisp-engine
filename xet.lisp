@@ -4,10 +4,13 @@
 (require :pngload)
 (require :sdl2)
 
-(defclass model ()
-  ((window :accessor window)))
-
-(defparameter *m* (make-instance 'model))
+(defparameter *db-path* "comanche.db")
+(defparameter *create-chunk-radius* 10)
+(defparameter *render-chunk-radius* 10)
+(defparameter *delete-chunk-radius* 14)
+(defparameter *render-sign-radius* 4)
+(defvar *window*)
+(defvar *online*)
 
 (defun load-texture (active-tex file &optional wrap)
   (pngload:with-png-in-static-vector (png file :flip-y t)
@@ -90,14 +93,15 @@
   (gl:draw-arrays :triangles 0 3)
   (gl:disable-vertex-attrib-array 0)
   (gl:use-program 0)
-  (sdl2:gl-swap-window (window *m*)))
+  (sdl2:gl-swap-window *window*))
+
 
 (defun main ()
   (sdl2:with-init (:everything)
     (sdl2:gl-set-attr :context-major-version 3)
     (sdl2:gl-set-attr :context-minor-version 3)
     (sdl2:with-window (win :flags '(:opengl :shown))
-      (setf (window *m*) win)
+      (setf *window* win)
       (sdl2:with-gl-context (gl-context win)
         (sdl2:gl-make-current win gl-context)
 
