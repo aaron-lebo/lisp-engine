@@ -30,10 +30,11 @@
    sampler
    camera
    timer
-   extra1
-   extra2
-   extra3
-   extra4))
+   sky-sampler
+   daylight
+   fog-distance
+   ortho
+   is-sign))
 
 (defun read-file (file)
   (with-open-file (stream file)
@@ -118,17 +119,17 @@
                                          sampler "sampler"
                                          camera "camera"
                                          timer "timer"
-                                         extra1 "sky_sampler"
-                                         extra2 "daylight"
-                                         extra3 "fog_distance"
-                                         extra4 "ortho")))
+                                         sky-sampler "sky_sampler"
+                                         daylight "daylight"
+                                         fog-distance "fog_distance"
+                                         ortho "ortho")))
               (line-prg (load-program "line" '(position "position") '(matrix "matrix")))
               (text-prg (load-program "text"
                                       '(position "position"
                                         uv "uv")
                                       '(matrix "matrix"
                                         sampler "sampler"
-                                        extra1 "is_sign")))
+                                        is-sign "is_sign")))
               (sky-prg (load-program "sky"
                                      '(position "position"
                                        normal "normal"
