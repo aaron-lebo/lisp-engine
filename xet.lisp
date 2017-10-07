@@ -30,10 +30,10 @@
    sampler
    camera
    timer
-   sky-sampler
-   daylight
-   fog-distance
-   ortho))
+   extra1
+   extra2
+   extra3
+   extra4))
 
 (defun read-file (file)
   (with-open-file (stream file)
@@ -116,15 +116,26 @@
                                          uv "uv")
                                        '(matrix "matrix"
                                          sampler "sampler"
-                                         sky-sampler "sky_sampler"
-                                         daylight "daylight"
-                                         fog-distance "fog_distance"
-                                         ortho "ortho"
                                          camera "camera"
-                                         timer "timer")))
-              (line-prg (load-program "line"))
-              (text-prg (load-program "text"))
-              (sky-prg (load-program "sky"))
+                                         timer "timer"
+                                         extra1 "sky_sampler"
+                                         extra2 "daylight"
+                                         extra3 "fog_distance"
+                                         extra4 "ortho")))
+              (line-prg (load-program "line" '(position "position") '(matrix "matrix")))
+              (text-prg (load-program "text"
+                                      '(position "position"
+                                        uv "uv")
+                                      '(matrix "matrix"
+                                        sampler "sampler"
+                                        extra1 "is_sign")))
+              (sky-prg (load-program "sky"
+                                     '(position "position"
+                                       normal "normal"
+                                       uv "uv")
+                                     '(matrix "matrix"
+                                       sampler "sampler"
+                                       timer "timer")))
               (triangle-prg (load-program "triangle"))
               (vao (gl:gen-vertex-array))
               (buf (make-buffer #(-0.5 -0.5 0.0
