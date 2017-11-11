@@ -4,6 +4,7 @@
 (require :pngload)
 (require :sdl2)
 
+(defparameter *rgb* #(0.5 0.5 0.5))
 (defvar *window*)
 
 (defclass program ()
@@ -50,8 +51,6 @@
     (gl:free-gl-array arr)
     (gl:bind-buffer :array-buffer 0)
     buf))
-
-(defparameter *rgb* #(0.5 0.5 0.5))
 
 (defun render-swap (buf program)
   (gl:clear :color-buffer-bit :depth-buffer-bit)
