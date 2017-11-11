@@ -24,18 +24,15 @@
     (gl:attach-shader program shader)
     shader))
 
-(defun delete-shaders (program shaders)
-  (loop :for shader :in shaders :do
-    (gl:detach-shader program shader)
-    (gl:delete-shader shader)))
-
 (defun load-program (name &optional attribs uniforms)
   (let* ((prg (gl:create-program))
          (vert (load-shader prg name "vertex"))
          (frag (load-shader prg name "fragment"))
          (program (make-instance 'program :id prg)))
     (gl:link-program prg)
-    (delete-shaders prg (list vert frag))
+    (loop :for shader :in (list vert frag) :do
+      (gl:detach-shader prg shader)
+      (gl:delete-shader shader))
     (loop :for (slot str) :on attribs :by #'cddr :while str
           :do (setf (slot-value program slot) (gl:get-attrib-location prg str)))
     (loop :for (slot str) :on uniforms :by #'cddr :while str
