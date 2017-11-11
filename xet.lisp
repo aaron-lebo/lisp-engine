@@ -79,11 +79,11 @@
         (gl:logic-op :invert)
         (gl:clear-color 0.0 0.0 0.0 1.0)
 
-        (let ((triangle-prg (load-program "triangle"))
-              (vao (gl:gen-vertex-array))
+        (let ((vao (gl:gen-vertex-array))
               (buf (make-buffer #(-0.5 -0.5 0.0
                                   +0.5 -0.5 0.0
-                                  +0.0  0.5 0.0))))
+                                  +0.0  0.5 0.0)))
+              (triangle-prg (load-program "triangle")))
           (gl:bind-vertex-array vao)
           (sdl2:with-event-loop (:method :poll)
             (:idle () (render-swap buf (slot-value triangle-prg 'id)))
