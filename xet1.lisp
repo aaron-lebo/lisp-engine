@@ -10,12 +10,37 @@
 (defparameter *delete-chunk-radius* 14)
 (defparameter *render-sign-radius* 4)
 (defvar *window*)
+(defvar *online*)
+
+(defun load-texture (active-tex file &optional wrap)
+  (pngload:with-png-in-static-vector (png file :flip-y t)
+    (let ((tex (gl:gen-texture)))
+      (gl:active-texture active-tex)
+      (gl:bind-texture :texture-2d tex)
+      (gl:tex-parameter :texture-2d :texture-min-filter :linear)
+      (gl:tex-parameter :texture-2d :texture-mag-filter :linear)
+      (when wrap
+        (gl:tex-parameter :texture-2d :texture-wrap-s :clamp-to-edge)
+        (gl:tex-parameter :texture-2d :texture-wrap-t :clamp-to-edge))
+      (gl:tex-image-2d :texture-2d 0 :rgba (pngload:width png) (pngload:height png) 0 :rgba :unsigned-byte (pngload:data png)))))
 
 (defclass program ()
-  ((id :initarg :id)))
+  ((id :initarg :id)
+   position
+   normal
+   uv
+   matrix
+   sampler
+   camera
+   timer
+   sky-sampler
+   daylight
+   fog-distance
+   ortho
+   is-sign))
 
-(defun read-file (path)
-  (with-open-file (stream path)
+(defun read-file (file)
+  (with-open-file (stream file)
     (let ((str (make-string (file-length stream))))
       (read-sequence str stream)
       str)))
@@ -84,11 +109,42 @@
         (gl:logic-op :invert)
         (gl:clear-color 0.0 0.0 0.0 1.0)
 
-        (let ((triangle-prg (load-program "triangle"))
+        (load-texture :texture0 "textures/texture.png")
+        (load-texture :texture1 "textures/font.png")
+        (load-texture :texture2 "textures/sky.png" t)
+        (load-texture :texture3 "textures/sign.png")
+
+        (let ((block-prg (load-program "block"
+                                       '(position "position"
+                                         normal "normal"
+                                         uv "uv")
+                                       '(matrix "matrix"
+                                         sampler "sampler"
+                                         camera "camera"
+                                         timer "timer"
+                                         sky-sampler "sky_sampler"
+                                         daylight "daylight"
+                                         fog-distance "fog_distance"
+                                         ortho "ortho")))
+              (line-prg (load-program "line" '(position "position") '(matrix "matrix")))
+              (text-prg (load-program "text"
+                                      '(position "position"
+                                        uv "uv")
+                                      '(matrix "matrix"
+                                        sampler "sampler"
+                                        is-sign "is_sign")))
+              (sky-prg (load-program "sky"
+                                     '(position "position"
+                                       normal "normal"
+                                       uv "uv")
+                                     '(matrix "matrix"
+                                       sampler "sampler"
+                                       timer "timer")))
+              (triangle-prg (load-program "triangle"))
               (vao (gl:gen-vertex-array))
               (buf (make-buffer #(-0.5 -0.5 0.0
-                                  0.5 -0.5 0.0
-                                  0.0  0.5 0.0))))
+                                   0.5 -0.5 0.0
+                                   0.0  0.5 0.0))))
           (gl:bind-vertex-array vao)
           (sdl2:with-event-loop (:method :poll)
             (:idle () (render-swap buf (slot-value triangle-prg 'id)))
