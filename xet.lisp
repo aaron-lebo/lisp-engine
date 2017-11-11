@@ -4,11 +4,6 @@
 (require :pngload)
 (require :sdl2)
 
-(defparameter *db-path* "comanche.db")
-(defparameter *create-chunk-radius* 10)
-(defparameter *render-chunk-radius* 10)
-(defparameter *delete-chunk-radius* 14)
-(defparameter *render-sign-radius* 4)
 (defvar *window*)
 
 (defclass program ()
@@ -87,8 +82,8 @@
         (let ((triangle-prg (load-program "triangle"))
               (vao (gl:gen-vertex-array))
               (buf (make-buffer #(-0.5 -0.5 0.0
-                                  0.5 -0.5 0.0
-                                  0.0  0.5 0.0))))
+                                  +0.5 -0.5 0.0
+                                  +0.0  0.5 0.0))))
           (gl:bind-vertex-array vao)
           (sdl2:with-event-loop (:method :poll)
             (:idle () (render-swap buf (slot-value triangle-prg 'id)))
