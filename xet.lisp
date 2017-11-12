@@ -39,28 +39,33 @@
           :do (setf (slot-value program slot) (gl:get-uniform-location prg str)))
     program))
 
-(defun make-buffer (verts)
-  (let* ((len (length verts))
-         (arr (gl:alloc-gl-array :float len))
+(defun make-buffer (items &optional (type :array-buffer))
+  (let* ((len (length items))
+         (arr (gl:alloc-gl-array (if (eq type :array-buffer) :float :unsigned-short) len))
          (buf (gl:gen-buffer)))
-    (gl:bind-buffer :array-buffer buf)
+    (gl:bind-buffer type buf)
     (dotimes (i len)
-      (setf (gl:glaref arr i) (aref verts i)))
-    (gl:buffer-data :array-buffer :static-draw arr)
+      (setf (gl:glaref arr i) (aref items i)))
+    (gl:buffer-data type :static-draw arr)
     (gl:free-gl-array arr)
-    (gl:bind-buffer :array-buffer 0)
+    (gl:bind-buffer type 0)
     buf))
 
-(defun render-swap (buf program)
+(defun render-swap (vertex-buf index-buf program)
   (gl:clear :color-buffer-bit :depth-buffer-bit)
   (gl:use-program program)
   (gl:uniformfv (gl:get-uniform-location program "color") *rgb*)
+
   (gl:enable-vertex-attrib-array 0)
-  (gl:bind-buffer :array-buffer buf)
+  (gl:bind-buffer :array-buffer vertex-buf)
   (gl:vertex-attrib-pointer 0 3 :float nil 0 (cffi:null-pointer))
-  (gl:draw-arrays :triangles 0 3)
+
+  (gl:bind-buffer :element-array-buffer index-buf)
+  (gl:draw-elements :triangles (gl:make-null-gl-array :unsigned-short) :count 3)
+
   (gl:disable-vertex-attrib-array 0)
   (gl:use-program 0)
+
   (sdl2:gl-swap-window *window*))
 
 (defun main ()
@@ -78,11 +83,12 @@
         (gl:clear-color 0.0 0.0 0.0 1.0)
 
         (let ((vao (gl:gen-vertex-array))
-              (buf (make-buffer #(-0.5 -0.5 0.0
-                                  +0.5 -0.5 0.0
-                                  +0.0  0.5 0.0)))
+              (vertex-buf (make-buffer #(-0.5 -0.5 0.0
+                                         +0.5 -0.5 0.0
+                                         +0.0  0.5 0.0)))
+              (index-buf (make-buffer #(0 1 2) :element-array-buffer))
               (triangle-prg (load-program "triangle")))
           (gl:bind-vertex-array vao)
           (sdl2:with-event-loop (:method :poll)
-            (:idle () (render-swap buf (slot-value triangle-prg 'id)))
+            (:idle () (render-swap vertex-buf index-buf (slot-value triangle-prg 'id)))
             (:quit () t)))))))
